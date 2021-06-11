@@ -44,7 +44,7 @@ esRima :: Palabra -> Palabra -> Bool
 esRima palabra1 palabra2 = (esRimaAsonante palabra1 palabra2 || esRimaConsonante palabra1 palabra2) && ((not.(sonIguales palabra1)) palabra2)
 --Las clases de equivalencia, dado que lo que nosotros queremos hacer es saber si dos palabras se consideran rima, son 3:
 --(palabras que rimen de alguna forma y no sean iguales, palabras que rimen de alguna forma pero sean iguales y palabras que no rimen
---  de ninfuna forma y sean iguales)
+--  de ni una forma y sean iguales)
 
 {-
 por medio de rimas: dos versos se conjugan con rima cuando logran rimar las últimas palabras de cada uno.
@@ -137,13 +137,6 @@ todasLasBarrasCumplen condicion estrofa = (length.(filter condicion)) estrofa ==
 {-
 Cadena: Es un patrón que se crea al conjugar cada verso con el siguiente, usando siempre la misma conjugación.
 La conjugación usada es elegida por el artista mientras está rapeando. Por ejemplo, una cadena de anadiplosis sería:
-
-este es un ejemplo de un parcial compuesto
-compuesto de funciones que se operan entre ellas
-ellas también pueden pasarse por parámetro
-parámetro que recibe otra función de alto orden
-
-	Tip: puede hacerse utilizando recursividad.
 -}
 cadena :: Conjugacion -> Patron
 cadena conjugacion estrofa = foldl1 (funcionLoca conjugacion) estrofa == versoN 4 estrofa
@@ -154,26 +147,18 @@ funcionLoca conjugacion verso1 verso2 | conjugacion verso1 verso2 =verso2
 
 {-
 CombinaDos: Dos patrones cualesquiera se pueden combinar para crear un patrón más complejo, y decimos que una estrofa lo cumple cuando 
-cumple ambos patrones a la vez. Por ejemplo, si contemplamos el patrón combinado de esdrújulas y anáfora, una estrofa que cumpliría podría ser:
-estrofa que sirve como caso ejémplico
-estrofa dedicada a la gente fanática
-estrofa comenzada toda con anáfora
-estrofa que termina siempre con esdrújulas
+cumple ambos patrones a la vez. 
 -}
 
 combinaDos :: Patron->Patron->Patron
 combinaDos patron1 patron2 estrofa =  patron1 estrofa && patron2 estrofa
 
 {-
-Se pide
-Modelar los patrones anteriores.
-
-Usar el punto a para definir los siguientes patrones combinados:
 aabb = patrón simple entre 1 y 2 + otro simple entre 3 y 4
 abab = patrón simple entre 1 y 3 + otro simple entre 2 y 4
 abba = patrón simple entre 1 y 4 + otro simple entre 2 y 3
-
 hardcore = patrón de cadena de rimas + esdrújulas
+
 ¿Se podría saber si una estrofa con infinitos versos cumple con el patrón hardcore? ¿Y el aabb? Justifique en cada 
 caso específicamente por qué (no valen respuestas genéricas).
 -}
@@ -191,8 +176,9 @@ hardcore :: Conjugacion-> Patron
 hardcore conjugacion = combinaDos (cadena conjugacion) esdrujulas
 
 
---No, con el hardcore nunca voy a saber porque se quedaria evaluando si cumple la condicion de que un patron sea esdrujulas
---En cambio, con el aabb, o cualquiera de sus variantes, puedo dado que simple utiliza evalua un patron de 4 barras
+--No, con el patron hardcore no se podria evaluar, dado que cadena y esdrujulas trabajan con que toda los versos de la estrofa cumplan con la 
+-- condicion.
+--En cambio, con el patron aabb si, dado que solo evalua 4 versos de la estrofa
 
 {-
 Puestas en escena
