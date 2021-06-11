@@ -69,8 +69,21 @@ Simple: es un patrón en el que riman 2 versos, el 1 y 4, pero no el 1 y 3
 -}
 
 type Patron = Estrofa->Bool
+
 simple :: Number->Number->Patron
-simple indice indice2 estrofa = (versosRiman (versoN indice estrofa) (versoN indice2 estrofa))
+simple indice indice2 estrofa = (versosRiman (versoN indice estrofa) (versoN indice2 estrofa)) && (demasVersosNoRiman (versoN indice estrofa) (versoN indice2 estrofa) estrofa)
+
+demasVersosNoRiman :: Verso -> Verso -> Estrofa -> Bool
+demasVersosNoRiman verso1 verso2 = not.(versosRiman verso1).head.(sacarVersos verso2).(sacarVersos verso1)
+
+demasVersos :: Number -> Number -> Estrofa -> Estrofa
+demasVersos indice indce2 estrofa = (...)
+
+sacarVersos :: Verso -> Estrofa -> Estrofa
+sacarVersos verso = filter (not.(tieneAlVerso verso)) 
+
+tieneAlVerso :: Verso -> Verso-> Bool
+tieneAlVerso verso verso2 = verso == verso2
 
 versoN :: Number-> [Verso]->Verso
 versoN numero = flip (!!) (numero-1) 
@@ -78,7 +91,10 @@ versoN numero = flip (!!) (numero-1)
 Esdrújulas: Todos los versos terminan con palabras en esdrújula. Diremos que una palabra es esdrújula cuando la antepenúltima vocal
 está acentuada. 
 -}
+esdrujulas :: Patron
+esdrujulas = todasLasBarrasCumplen terminaEsdrujula
 
+{-
 esdrujulas :: Patron
 esdrujulas = todasLasBarrasCumplen rimanConEsdrujula
 
@@ -93,6 +109,7 @@ meQuedoConVersoSiSegun condicion verso1 verso2 | condicion verso1 verso2 = verso
 
 rimanConEsdrujula :: Conjugacion
 rimanConEsdrujula verso1 verso2 = terminaEsdrujula verso1 && terminaEsdrujula verso2
+-}
 
 terminaEsdrujula :: Verso -> Bool
 terminaEsdrujula = esEsdrujula.ultimaPalabra
@@ -101,21 +118,21 @@ esEsdrujula :: Palabra->Bool
 esEsdrujula = tieneTilde.head.(ultimasNSegun 3 esVocal)
 
 {-
-Anáfora: Todos los versos comienzan con la misma palabra. Por ejemplo:
-paradigmas hay varios, recién vamos por funcional
-paradigmas de programación es lo que analizamos acá
-paradigmas que te invitan a otras formas de razonar
-paradigmas es la materia que más me gusta cursar
--}
+Anáfora: Todos los versos comienzan con la misma palabra. -}
 
 anafora :: Patron
-anafora = todasLasBarrasCumplen empiezanIgual
+anafora estrofa = todasLasBarrasCumplen (empiezanIgual (primeraPalabraDelVerso estrofa)) estrofa
 
-empiezanIgual :: Conjugacion
+primeraPalabraDelVerso :: Estrofa -> String
+primeraPalabraDelVerso = head.words.head
+
+empiezanIgual :: Verso -> Verso -> Bool
 empiezanIgual verso1 verso2 = (head.words) verso1 == (head.words) verso2 
 
-todasLasBarrasCumplen :: (Conjugacion)->Estrofa->Bool
-todasLasBarrasCumplen condicion = (==4).(contarRimasVersoSegun 0 condicion)
+todasLasBarrasCumplen :: (Verso->Bool)->Estrofa->Bool
+--todasLasBarrasCumplen condicion = (==4).(contarRimasVersoSegun 0 condicion)
+todasLasBarrasCumplen condicion estrofa = (length.(filter condicion)) estrofa == length estrofa
+
 
 {-
 Cadena: Es un patrón que se crea al conjugar cada verso con el siguiente, usando siempre la misma conjugación.
@@ -129,7 +146,11 @@ parámetro que recibe otra función de alto orden
 	Tip: puede hacerse utilizando recursividad.
 -}
 cadena :: Conjugacion -> Patron
-cadena conjugacion = todasLasBarrasCumplen conjugacion
+cadena conjugacion estrofa = foldl1 (funcionLoca conjugacion) estrofa == versoN 4 estrofa
+
+funcionLoca :: Conjugacion ->Verso -> Verso-> Verso
+funcionLoca conjugacion verso1 verso2 | conjugacion verso1 verso2 =verso2
+                                      | otherwise = verso1
 
 {-
 CombinaDos: Dos patrones cualesquiera se pueden combinar para crear un patrón más complejo, y decimos que una estrofa lo cumple cuando 
@@ -190,15 +211,15 @@ data PuestaEnEscena = UnaPuesta {
     potencia :: Number,
     estrofa :: Estrofa,
     artista :: Artista
-}
+}deriving(Show)
 
-type Estilo = Estrofa -> PuestaEnEscena -> PuestaEnEscena
+type Estilo = PuestaEnEscena -> PuestaEnEscena
 
 gritar :: Estilo
-gritar _ = aumentarPotencia 50
+gritar = aumentarPotencia 50
 
 responderAcote :: Bool -> Estilo
-responderAcote efectividad _ = (modificarEstadoPublico efectividad).(aumentarPotencia 20)
+responderAcote efectividad = (modificarEstadoPublico efectividad).(aumentarPotencia 20)
 
 aumentarPotencia :: Number -> PuestaEnEscena->PuestaEnEscena
 aumentarPotencia porcentaje puesta = puesta{potencia= potencia puesta + (potencia puesta)*(porcentaje/100)}
@@ -207,7 +228,7 @@ modificarEstadoPublico :: Bool-> PuestaEnEscena -> PuestaEnEscena
 modificarEstadoPublico estado puesta = puesta{publicoExaltado = estado}
 
 tirarTecincas :: Patron -> Estilo
-tirarTecincas patron versos = (modificarEstadoPublico (patron versos)).(aumentarPotencia 10)
+tirarTecincas patron puesta = ((modificarEstadoPublico (patron (estrofa puesta))).(aumentarPotencia 10)) puesta
 
 {-
 Hacer que un artista se tire un freestyle a partir de la estrofa que quiere decir y el estilo que le quiera dar a su puesta en escena. 
@@ -219,7 +240,10 @@ puestaBase :: Artista->PuestaEnEscena
 puestaBase nombre = UnaPuesta {potencia = 1, publicoExaltado = False, estrofa=[], artista = nombre}
 
 tirarFreestyle :: Estrofa->Estilo->Artista->PuestaEnEscena
-tirarFreestyle  versos estilo artista = estilo versos (puestaBase artista)
+tirarFreestyle  versos estilo = estilo.(establecerEstrofa versos).puestaBase
+
+establecerEstrofa :: Estrofa ->PuestaEnEscena-> PuestaEnEscena
+establecerEstrofa versos puesta = puesta{estrofa = versos}
 
 {-
 
@@ -243,7 +267,6 @@ type CriterioJurado = PuestaEnEscena->Bool
 
 alToke :: Jurado
 alToke = [cumpleCriterio (cumplePatron aabb) 0.5, cumpleCriterio (cumplePatron (combinaDos esdrujulas (simple 1 4))) 1, cumpleCriterio (potenciaSuficiente 1.5) 2, cumpleCriterio publicoExaltado 1]
-{-- Si el freestyle (estrofa de la puesta) cumple con el patrón aabb, entonces suma 0.5 punto-}
 
 puntaje :: PuestaEnEscena->Jurado->Number
 puntaje puesta = (min 3).sum.(cumplirCriterios [] puesta)
@@ -274,4 +297,24 @@ la casa.
 A partir de una batalla y un conjunto de jurados, saber qué artista se lleva el cinto a la casa.
 -}
 -}  
+
+ganadorBatalla :: [PuestaEnEscena]->[Jurado]->Artista
+ganadorBatalla puestas jurados | puntajeArtistaN 1 0 puestas jurados> puntajeArtistaN 2 0 puestas jurados = artistaNBatalla 1 puestas
+                               | otherwise = artistaNBatalla 2 puestas
+
+puntajeArtistaN :: Number -> Number -> [PuestaEnEscena] -> [Jurado] -> Number
+puntajeArtistaN _ puntajeTotal _ [] = puntajeTotal
+puntajeArtistaN nroArtista puntajeInicial puestas (x:xs) = puntajeArtistaN nroArtista (sum(map (flip puntaje x) (puestasArtistaN nroArtista puestas))) puestas xs
+
+puestasArtistaN :: Number -> [PuestaEnEscena] -> [PuestaEnEscena]
+puestasArtistaN nroCompetidor puestas = filter (esPuestaArtistaN (artistaNBatalla nroCompetidor puestas)) puestas
+
+artistaNBatalla :: Number -> [PuestaEnEscena]->Artista
+artistaNBatalla nroCompetidor = artista.(puestaN nroCompetidor)
+
+puestaN :: Number-> [PuestaEnEscena]->PuestaEnEscena
+puestaN numero = flip (!!) (numero-1)
+
+esPuestaArtistaN :: Artista->PuestaEnEscena -> Bool
+esPuestaArtistaN artista1= (==artista1).artista
 
